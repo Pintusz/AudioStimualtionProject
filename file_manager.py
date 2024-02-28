@@ -7,12 +7,13 @@ Feldolgozáshoz beírni az analyze_file()-ba a fájl abszolút elérési útvona
 
 import os
 import datetime
-import constants as c
-import sleep_stage_classifer as s
-import audio_feedback as a
 import pandas as pd
 import matplotlib.pyplot as plt
 import yasa
+import constants as c
+import sleep_stage_classifer as s
+import audio_feedback as a
+
 
 def sleep_stage_file_maker():
     """
@@ -47,6 +48,8 @@ def analyze_file(csv_file_path):
     - Ábrázoljuk 'matplotlib'-bel a valószínűségeket (ahogy a 'yasa'-ban is, de az fájlból nem működik). Méretét az
       adatmennyiség határozza meg.
     - Ábrázoljuk az összes szükséges értéket és kimutatást 'yasa' függvény segítségével.
+    - A c.SHOW_FEEDBACK egy kapcsoló, jelzi (kiemelővel a valószínűségploton) hogy mikor volt a check_pip szerint audio
+      stimuláció. Mindig az aktuális check_pip feltételekre!
     :param csv_file_path: output_list-be mentett .csv fájlok abszolút elérési útvonala
     """
     df = pd.read_csv(csv_file_path)
@@ -59,14 +62,15 @@ def analyze_file(csv_file_path):
         pip_results = [a.check_pip(dict_list[:i + 1]) for i in range(len(dict_list))]
 
     # Hipnogram ábrázolása
-    plt.figure(figsize=(int(len(stages)/40), 5))
+    plt.figure(figsize=(int(len(stages) / 40), 5))
     hypn = yasa.Hypnogram(stages, freq="30s")
     hypn.plot_hypnogram(lw=2, fill_color="whitesmoke")
     plt.show()
 
     # Valószínűségplot ábrázolása
     colors = ["#99d7f1", "#009DDC", "xkcd:twilight blue", "xkcd:rich purple", "xkcd:sunflower"]
-    ax = probabilities.plot(kind='area', figsize=(int(len(probabilities)/6), 5), stacked=True, color=colors, alpha=0.8, linewidth=0)
+    ax = probabilities.plot(kind='area', figsize=(int(len(probabilities) / 6), 5), stacked=True, color=colors,
+                            alpha=0.8, linewidth=0)
     ax.set_xlabel('Time (30-sec epoch)')
     ax.set_ylabel('Probability')
     ax.legend(frameon=False, bbox_to_anchor=(1, 1))
@@ -75,19 +79,21 @@ def analyze_file(csv_file_path):
         for i, result in enumerate(pip_results):
             if result:  # Ha True, akkor kiemeljük az adott szakaszt
                 ax.axvspan(i, i + 1, color='yellow', alpha=0.5)  # Kiemelés sárga színnel
-    plt.show()
-    print((sum(pip_results)/2), "percnyi ingerlés volt összesen")
+        plt.show()
+    #    print((sum(pip_results) / 2), "percnyi ingerlés volt összesen")
 
     # Alvási statisztikák kiíratása táblázatban
-    statistics = yasa.sleep_statistics(stages_int, sf_hyp=1/30)
+    statistics = yasa.sleep_statistics(stages_int, sf_hyp=1 / 30)
     stat_df = pd.DataFrame(list(statistics.items()), columns=['Parameter', 'Value'])
     plt.figure(figsize=(4, 6))
     plt.title('Sleep Statistics')
     plt.axis('off')
-    plt.table(cellText=stat_df.values, colLabels=stat_df.columns, loc='center', cellLoc='center', colColours=['lightgray'] * 2)
+    plt.table(cellText=stat_df.values, colLabels=stat_df.columns, loc='center', cellLoc='center',
+              colColours=['lightgray'] * 2)
     plt.tight_layout()
     plt.show()
 
- #A függvény használata (r-el kezdődjön), csak akkor kikommentelni, ha ezt akarjuk!:
-analyze_file(r'C:\Programkornyezet\PythonProjects\AudiostimulationProject\AudiostimulationDirectory\output_files\02_14_full_night_full_time.csv')
 
+if c.ANALYZE_FILE:
+    analyze_file(
+        r'C:\Programkornyezet\PythonProjects\AudiostimulationProject\AudiostimulationDirectory\output_files\02_28_full_night_audio2.csv')

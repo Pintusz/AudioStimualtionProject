@@ -18,15 +18,22 @@ osztályozó metódust
 import yasa
 import mne
 import numpy as np
-import time
+import pickle
+import os
 import constants as c
 import audio_feedback as a
 
-
 epoch_data_list = []  # egy epochnyi adat
-yasa_input_list = []  # a yasa-ba bemenő adatmennyiség
 yasa_output_list = []  # a fájlba írandó lista folyamatos bővüléggel
-first_call = True  # az első 5 perc flagje a yasa_classifier-ben
+one_hour_list = []
+
+if os.path.exists(c.ONE_HOUR_WAKE) and c.ANALYZE_FILE == False:  # betöltünk egy órányi ébrenlétet
+    with open(c.ONE_HOUR_WAKE, 'rb') as file:
+        yasa_input_list = pickle.load(file)
+        print("egy óra beolvasva")
+elif c.ANALYZE_FILE == False:
+    yasa_input_list = []
+    print("yasa_input_list is empty")
 
 
 def yasa_classifier(raw):
@@ -42,42 +49,27 @@ def yasa_classifier(raw):
         - .predict() fél perces epochok készítése után a fázisoknak megfelelő betűjelek listájával tér vissza.
         - .predict_proba() az ugyanezen 5 s-es epochoknál az egyes alvási fázisokhoz tartozó valószínűségekkel
           (5 fázis: N1, N2, N3, R, W) tér vissza.
-    - A 'yasa' esetéban minél hosszabb időtartamot elemez annál jobb az eredmény, 5 percnél kevesebbet nem tud,
-      így az első 5 percet meg kell várni, utána tudjuk epochonként megkapni az értékeket.Ezt kezeli az if/else.
-      Az első 5 perc esetén kiírjuk az egész listát, utána, fél percenként ablakolt adatok érkeznek, az ezekből készült
-      listából az utolsó elem szükséges/új nekünk. több adat a pontos mérést szolgálja.
-    - Az if/else-n belül a prediktálás eredményei, és a valószínűségek, mint dictionary
-      a yasa_output_list globális változóhoz adódnak, amiből a file_maker a teljes mérés végén csv. fájlt készít.
-    - Kiírja az aktuális értéket
-    - Meghívja majd az audio_feedbacket az érték alapján, ami majd meghatározza az audiostimulációt.
+    - A raw, amit meghívással kap mindig egy óra hosszúságú adat, az alvás elején az ébrenlét előre felvett adataival
+      kiegészítve. Minél hosszabb időtartam adott a yasa-nak, annál pontosabb, egy óránál többet nem akartam, ez
+      stabilabb futásidőt eredményez mint pl 8 óra, és állandó, ezzel sokkal pontosabb, mintha 5 percet adnánk neki
+      az elején, és később is, vagy később többet, így állandó szinten van a minőség az egész mérés alatt
+    - A végén kiíratja az aktuális 30 s állapotát, és meghívja az audio_feedback-ból az audio_controllert, ami elvégzi
+      az audiostimulációt ha szükséges.
     :param raw: EDF fájl
     """
-    start_time = time.time()
     global yasa_output_list, first_call
     sls = yasa.SleepStaging(raw, eeg_name="O1-O2", metadata=dict(age=c.AGE, male=c.MALE))
     y_pred = sls.predict()
     y_proba = sls.predict_proba()
 
-    if first_call:
-        for i in range(len(y_pred)):
-            y_pred_i = y_pred[i]
-            y_proba_i = y_proba.iloc[i].to_dict()
-            yasa_output_list.append({"Stage": y_pred_i, **y_proba_i})
-            print(y_pred_i)
-        first_call = False
-    else:
-        y_pred_last = y_pred[-1]
-        y_proba_last = y_proba.iloc[-1].to_dict()
-        yasa_output_list.append({"Stage": y_pred_last, **y_proba_last})
-        print(y_pred_last)
-
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    print(
-        f"Eltelt idő: {elapsed_time} s, y_pred hossza: {len(y_pred)}\n")  # Eltelt idő és az y_pred hosszának kiírása
+    y_pred_last = y_pred[-1]
+    y_proba_last = y_proba.iloc[-1].to_dict()
+    yasa_output_list.append({"Stage": y_pred_last, **y_proba_last})
+    a.audio_controller(yasa_output_list)
+    print(y_pred_last)
 
 
-def raw_object_maker(yasa_input_list):  #névkonvenció? nemtudom
+def raw_object_maker(yasa_input_list):
     """
     A beérkező adatokból a 'yasa' számára feldolgozható
     EDF fájlt készít
@@ -97,12 +89,11 @@ def raw_object_maker(yasa_input_list):  #névkonvenció? nemtudom
     t3_data = []
     t4_data = []
 
-    for pair in yasa_input_list:
-        for obj in pair:
-            o1_data.append(obj.O1)
-            o2_data.append(obj.O2)
-            t3_data.append(obj.T3)
-            t4_data.append(obj.T4)
+    for obj in yasa_input_list:
+        o1_data.append(obj.O1)
+        o2_data.append(obj.O2)
+        t3_data.append(obj.T3)
+        t4_data.append(obj.T4)
 
     o1_np = np.array(o1_data)
     o2_np = np.array(o2_data)
@@ -116,8 +107,7 @@ def raw_object_maker(yasa_input_list):  #névkonvenció? nemtudom
 
     ch_names = ['O1', 'O2', 'T3', 'T4', 'O1-O2', 'T3-T4']
     ch_types = ['eeg'] * 6
-    sfreq = c.SAMPLING_FREQ
-    info = mne.create_info(ch_names=ch_names, sfreq=sfreq, ch_types=ch_types)
+    info = mne.create_info(ch_names=ch_names, sfreq=c.SAMPLING_FREQ, ch_types=ch_types)
     raw = mne.io.RawArray(eeg_data, info)
     yasa_classifier(raw)
 
@@ -129,33 +119,48 @@ def epoch_maker(data):
 
     A listák méretei itt változtathatóak meg!
 
-    - A globális változók a többszöri meghívás miatt szerepelnek:
-    - Az epoch_data_list egy-egy epoch hosszát határozza meg. Ez ugyan a constants-ban változtatható, de ne változtass,
-      a sampling_freq (250 Hz) és az epoch_len (30 s) is adott. /2 a duplikált bemeneti adatok miatt fontos, megoldása
-      a raw_object_maker-ben.
-    - A beérkező adat hozzáadódik az epoch_data_list-hez. Ez az alapegységünk, 30 s-nyi adat! Ha ez "megtelik"
-      hozzáadódik a yasa_input_list-hez, ez az (epoch méret egész többszörösére) változtatható hosszúságú lista,
-      amit a 'yasa' klasszifikáló egészben kap meg. Most 15 perc, minél hosszab, annál pontosabb a klasszifikálás,
-      de nő a feldolgozási idő is.
-    - A YASA_INPUT_LEN a constants-ban változtatható méretű.
-
-      - A yasa-nak szükséges legalább 5 perc, ezért az első 5 percet egyben adjuk át, utána epochonként.
-      - Amikor "megtelik" az első epoch törlődik, és egy új hozzáadódik, ablakolunk.
+    - A BrainBit-ből érkező jelekkel feltöltjük az epoch_data_listet. Mivel minden meghíváskor új adat érkezi
+      ezért globális változó, hogy ne inicializálódjon újra
+    - A constonts.py-ban megadható a sampling freq és az apoch mérete, de ezek maradjanak változatlaul
+    - Ha az epoch_data_list megtelik adattal hozzáadódik egy nagy listához és kiürül, újratöltődik
+    - A yasa_input listet inicializáláskor feltöltjük egy órányi nyers ébrenléti adattal. Ehhez hozzáadódnak az új
+      epochot, és folyamatosan tölrlődnek az elsők, így ablakolunk, mindig egy órányi adattal hívjuk meg a
+      raw_object_makert
+    - Ez a yasa miatt lesz fontos
 
 
     :param data: BrainBit-ből érkező nyers adat
     """
     global epoch_data_list, yasa_input_list
-    epoch_data_list_len = int(c.SAMPLING_FREQ * c.EPOCH_LEN / 2)
+    epoch_data_list_len = int(c.SAMPLING_FREQ * c.EPOCH_LEN)
 
-    epoch_data_list.append(data)
+    for elem in data:
+        epoch_data_list.append(elem)
 
     if len(epoch_data_list) >= epoch_data_list_len:
         yasa_input_list.extend(epoch_data_list)
         epoch_data_list = []
 
-        if len(yasa_input_list) > (c.YASA_INPUT_LEN) * epoch_data_list_len:
+        if len(yasa_input_list) > (c.YASA_INPUT_LEN * epoch_data_list_len):
             del yasa_input_list[:epoch_data_list_len]
 
-        if len(yasa_input_list) > epoch_data_list_len * 10:
-            raw_object_maker(yasa_input_list)
+        raw_object_maker(yasa_input_list)
+
+
+"""
+#Ezzel vettem fel az egy óra ébrenlétet, ha meég szükség lesz rá. 
+def save_data_with_pickle(data_list): #csak az egy órás adathoz kellett
+    f_path = r"C:\Programkornyezet\PythonProjects\AudiostimulationProject\AudiostimulationDirectory\one_hour_wake.pkl"
+    with open(f_path, 'wb') as file:
+        pickle.dump(data_list, file)
+
+def process_data(data):   #csak az egy órás adathoz kellett
+
+    global one_hour_list
+    for elem in data:
+        one_hour_list.append(elem)
+
+    if len(one_hour_list) >= c.EPOCH_LEN * c.SAMPLING_FREQ * 2 * 60: #ezt 60 ra lesz egy óra
+        save_data_with_pickle(one_hour_list)
+        one_hour_list.clear()
+"""

@@ -12,6 +12,7 @@ import concurrent.futures
 from time import sleep
 import constants as c
 import sleep_stage_classifer as s
+import audio_feedback as a
 import file_manager as f
 
 def sensor_found(scanner, sensors):
@@ -125,8 +126,10 @@ try:
             input()
             sensor.exec_command(SensorCommand.StopSignal)
             print("Stop signal")
+            a.stop_stream()
             f.sleep_stage_file_maker()      #stop signal után menti el fájlba az eredményt
-            s.yasa_output_list.clear()      #biztonság kedvéért törli a nagy listát
+            s.yasa_output_list.clear()      #biztonság kedvéért törli a nagy listákat
+            s.yasa_input_list.clear()
 
         sensor.disconnect()
         print("Disconnect from sensor")
