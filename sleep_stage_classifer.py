@@ -27,14 +27,10 @@ epoch_data_list = []  # egy epochnyi adat
 yasa_output_list = []  # a fájlba írandó lista folyamatos bővüléggel
 one_hour_list = []
 
-if os.path.exists(c.ONE_HOUR_WAKE) and c.ANALYZE_FILE == False:  # betöltünk egy órányi ébrenlétet
-    with open(c.ONE_HOUR_WAKE, 'rb') as file:
-        yasa_input_list = pickle.load(file)
-        print("egy óra beolvasva")
-elif c.ANALYZE_FILE == False:
-    yasa_input_list = []
-    print("yasa_input_list is empty")
 
+with open(c.ONE_HOUR_WAKE, 'rb') as file:
+    yasa_input_list = pickle.load(file)
+    print("egy óra beolvasva")
 
 def yasa_classifier(raw):
     """

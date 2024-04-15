@@ -135,7 +135,6 @@ try:
         print("Disconnect from sensor")
         del sensor
 
-
     del scanner
     print('Remove scanner')
 except Exception as err:

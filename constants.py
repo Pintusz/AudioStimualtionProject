@@ -2,27 +2,31 @@
 
 SAMPLING_FREQ = 250     #mintavételi freq, ez stabil, írja, ha megváltozik, nem változtatni
 SIGNAL_TIME = 350       #ha időre fut a kód, akkor a start signal után az input() helyére sleep(...)
-RESIST_TIME = 5
+RESIST_TIME = 10
 EPOCH_LEN = 30         #30 s-nyi epochokkal dolgozik
 YASA_INPUT_LEN = 2*60        #percben (az epoch 30 s)
 
 #EEG metadata values
 
+NAME = "PG"
 MALE = True
 AGE = 22
 
 #file managing
 
-FILE_IDENTIFIER = "full_night_audio2"
+FILE_IDENTIFIER = "full_night_audio"
 FILE_FOLDER_NAME = "C:\Programkornyezet\PythonProjects\AudiostimulationProject\AudiostimulationDirectory\output_files"
-ANALYZE_FILE = True     #ábrázoljuk a mentett fájlokat. Futtatásnál false
-SHOW_FEEDBACK = True    #sárgával színezi, hogy a check_pip alapján mikor volt ing. Aktuális check_pip!
 
 #audiofeedback
 
-CHECK_LEN = 3
-FREQUENCY_RIGHT = 138   #a kettő különbségét érzékeljük a sztereo hangzásból
-FREQUENCY_LEFT = 135
+DELAY = 10    #hány epochal a kezdés után indul el a mérés
+CHECK_LEN = 8
+
+#EZT A NÉGYET KELL ÁLLÍTANI, MÁSHOZ NE NYÚLJATOK
+FREQUENCY_RIGHT = 250
+FREQUENCY_LEFT = 253
+N2_N3 = 1
+N3 = 0.5
 
 #sleepstaging first wake hour file path
 
