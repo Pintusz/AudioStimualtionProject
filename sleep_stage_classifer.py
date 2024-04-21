@@ -19,7 +19,6 @@ import yasa
 import mne
 import numpy as np
 import pickle
-import os
 import constants as c
 import audio_feedback as a
 
@@ -144,7 +143,7 @@ def epoch_maker(data):
 
 
 """
-#Ezzel vettem fel az egy óra ébrenlétet, ha meég szükség lesz rá. 
+#Ezzel vettem fel az egy óra ébrenlétet, ha még szükség lesz rá. 
 def save_data_with_pickle(data_list): #csak az egy órás adathoz kellett
     f_path = r"C:\Programkornyezet\PythonProjects\AudiostimulationProject\AudiostimulationDirectory\one_hour_wake.pkl"
     with open(f_path, 'wb') as file:

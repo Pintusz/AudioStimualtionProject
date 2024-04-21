@@ -5,7 +5,6 @@ import threading
 import constants as c
 
 
-# Globális változók
 sample_rate = 44100
 phase_left = 0
 phase_right = 0
@@ -39,7 +38,7 @@ def check_pip(tester_list):
             past_first_N3 = True
     else:
         last_probas = [{k: v for k, v in elem.items() if k != 'Stage'} for elem in tester_list[-c.CHECK_LEN:]]
-        all_conditions_met = all((elem['N2'] + elem['N3'] > c.N2_N3) and (elem['N3'] <= c.N3) for elem in last_probas)
+        all_conditions_met = all((elem['W'] <= c.W) and (elem['N3'] <= c.N3) for elem in last_probas) and len(tester_list) < c.Terminate
         return all_conditions_met
 
 

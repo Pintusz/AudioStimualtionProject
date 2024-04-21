@@ -21,22 +21,34 @@ def txt_maker(file_path):
     finish_time = datetime.now()
     start_time = finish_time - timedelta(seconds=len(s.yasa_output_list) * c.EPOCH_LEN)
 
-    # A szöveg, ahol a konstansokat azok értékével helyettesítjük
     generated_text = f"Kezdés ideje: {start_time.strftime('%Y-%m-%d %H:%M')}\n"
     generated_text += f"Befejezés ideje: {finish_time.strftime('%Y-%m-%d %H:%M')}\n"
-    generated_text += f"Ingerlés: \n Az első {c.DELAY / 2} percben nem történik ingerlés az alvás megszilárdulásának elősegítése miatt.\n"
+    generated_text += f"Ingerlés: \n Az első teljes N3 ciklusig nincs ingerlés\n"
     generated_text += f"Az utolsó {c.CHECK_LEN} epochban ellenőrzi a feltételek teljesülését.\n"
-    generated_text += f"Audio_feedback történik, ha az N2+N3 valószínűség átlépi a {c.N2_N3} valószínűséget.\n"
-    generated_text += f"Leáll, ha az N3 valószínűsége átlépi a {c.N3} értéket.\n"
+    generated_text += f"Audio_feedback történik az éjszaka folyamán\n"
+    generated_text += f"Leáll, ha az N3 valószínűsége átlépi a {c.N3} értéket, vagy W valószínűsége átlépi a {c.W} értéket\n"
+    generated_text += f"Az alvás eslő {c.TERMINATE/120} órájában van ingerlés"
     generated_text += f"A binaurális ütem jobb oldali vivőfrekvenciája {c.FREQUENCY_RIGHT}, a bal {c.FREQUENCY_LEFT} Hz\n"
     generated_text += f"Az ütem frekvenciája: {c.FREQUENCY_RIGHT-c.FREQUENCY_LEFT}"
 
-    # A generált szöveg mentése a megadott fájlba
     with open(file_path, "w") as text_file:
         text_file.write(generated_text)
 
 
 def analyze_file(csv_file_path):
+
+    """
+    Vizualizálja,
+    és menti az alvás eredményeit
+
+    - Feldolgozza a mérés végén létrejött csv fájlt.
+    - Hypnogramot, valószínűség-plotot ábrázol az alvási fázisokról az idő függvényében, és alvási statisztikát készít.
+    - A valószínűség-ploton ábrázolja az aktuális audiofeedback logika szerint, hogy mikor volt az alvás alatt visszajelzés
+    - A plotokat kimenti a meghatározott helyre
+    - Ment egy Adatok.txt fájlt, ami a mérés beállításait tartalmazza röviden
+    - A kikommentelt részbe a kívánt elérési útvonalat beírva és futtatva tetszőleges fájlt lehet elemezni, DE figyelni a logika megváltozására
+
+    """
     a.past_first_N3 = False #a mentéshez az első N3-at ne számolja bele
     base_dir = "C:\\Users\\pinde\\OneDrive\\Szakdolgozat\\Mérések"
     today = datetime.now().strftime("%m.%d")  # MM.DD formátum
@@ -45,7 +57,7 @@ def analyze_file(csv_file_path):
 
     original_save_dir = save_dir
     while os.path.exists(save_dir):
-        save_dir = f"{original_save_dir}_{c.NAME}_{counter}"
+        save_dir = f"{original_save_dir}_{counter}"
         counter += 1
 
     os.makedirs(save_dir)
@@ -100,4 +112,4 @@ def analyze_file(csv_file_path):
     text_file_path = os.path.join(save_dir, "Adatok.txt")
     txt_maker(text_file_path)
 
-#analyze_file(r'C:\Programkornyezet\PythonProjects\AudiostimulationProject\AudiostimulationDirectory\output_files\04_12_full_night_audio.csv')
+#analyze_file(r'C:\Programkornyezet\PythonProjects\AudiostimulationProject\AudiostimulationDirectory\output_files\04_15_full_night_audio.csv')
