@@ -38,7 +38,7 @@ def check_pip(tester_list):
             past_first_N3 = True
     else:
         last_probas = [{k: v for k, v in elem.items() if k != 'Stage'} for elem in tester_list[-c.CHECK_LEN:]]
-        all_conditions_met = all((elem['W'] <= c.W) and (elem['N3'] <= c.N3) for elem in last_probas) and len(tester_list) < c.Terminate
+        all_conditions_met = all((elem['W'] <= c.W) and (elem['N3'] <= c.N3) for elem in last_probas) and len(tester_list) < c.TERMINATE
         return all_conditions_met
 
 
