@@ -49,6 +49,18 @@ def analyze_file(csv_file_path):
     - A kikommentelt részbe a kívánt elérési útvonalat beírva és futtatva tetszőleges fájlt lehet elemezni, DE figyelni a logika megváltozására
 
     """
+    """
+    Vizualizálja,
+    és menti az alvás eredményeit
+
+    - Feldolgozza a mérés végén létrejött csv fájlt.
+    - Hypnogramot, valószínűség-plotot ábrázol az alvási fázisokról az idő függvényében, és alvási statisztikát készít.
+    - A valószínűség-ploton ábrázolja az aktuális audiofeedback logika szerint, hogy mikor volt az alvás alatt visszajelzés
+    - A plotokat kimenti a meghatározott helyre
+    - Ment egy Adatok.txt fájlt, ami a mérés beállításait tartalmazza röviden
+    - A kikommentelt részbe a kívánt elérési útvonalat beírva és futtatva tetszőleges fájlt lehet elemezni, DE figyelni a logika megváltozására
+
+    """
     a.past_first_N3 = False #a mentéshez az első N3-at ne számolja bele
     base_dir = "C:\\Users\\pinde\\OneDrive\\Szakdolgozat\\Mérések"
     today = datetime.now().strftime("%m.%d")  # MM.DD formátum
@@ -112,4 +124,4 @@ def analyze_file(csv_file_path):
     text_file_path = os.path.join(save_dir, "Adatok.txt")
     txt_maker(text_file_path)
 
-#analyze_file(r'C:\Programkornyezet\PythonProjects\AudiostimulationProject\AudiostimulationDirectory\output_files\04_15_full_night_audio.csv')
+#analyze_file(r'C:\Programkornyezet\PythonProjects\AudiostimulationProject\AudiostimulationDirectory\output_files\07_04_full_night_audio.csv')

@@ -22,7 +22,7 @@ FREQUENCY_RIGHT = 250
 FREQUENCY_LEFT = 253
 W = 0.95
 N3 = 0.5
-TERMINATE = 780
+TERMINATE = 0
 
 #sleepstaging first wake hour file path
 
